@@ -1,0 +1,5 @@
+name: Experience Customizations
+type: module
+description: EditVR experiences for Drupal.
+core: 8.x
+package: EditVR

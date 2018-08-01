@@ -1,0 +1,10 @@
+{
+  "name": "editvr/editvr_experience",
+  "type": "drupal-module",
+  "description": "EditVR experiences for Drupal.",
+  "keywords": ["Drupal"],
+  "license": "GPL-2.0+",
+  "homepage": "https://editvr.io",
+  "minimum-stability": "dev",
+  "require": { }
+}

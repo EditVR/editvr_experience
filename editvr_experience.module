@@ -1,0 +1,96 @@
+<?php
+
+/**
+ * @file
+ * Contains editvr_experience.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Drupal\Core\Link;
+
+/**
+ * Implements hook_help().
+ */
+function editvr_experience_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the editvr_experience module.
+    case 'help.page.editvr_experience':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Custom code for experiences.') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_inline_entity_form_entity_form_alter().
+ */
+function editvr_experience_inline_entity_form_entity_form_alter(&$entity_form, &$form_state) {
+  if ($entity_form['#entity_type'] == 'node' && $entity_form['#bundle'] == 'scene') {
+    // Get the experience url, which is on the parent node. Get the slug, which
+    // is on the scene node (which is this form).
+    $experience_url = isset($form_state->getUserInput()['field_experience_url'][0]['uri']) && !empty($form_state->getUserInput()['field_experience_url'][0]['uri']) ? $form_state->getUserInput()['field_experience_url'][0]['uri'] : FALSE;
+    $slug = !empty($entity_form['#default_value']->field_slug->value) ? $entity_form['#default_value']->field_slug->value : FALSE;
+
+    if ($experience_url && $slug) {
+      $entity_form['field_components']['#suffix'] = _editvr_experience_place_components_link($experience_url, $slug);
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter() for the node edit form.
+ *
+ * We are adding a Place Components link for each experience on this scene is
+ * attached to. This is on the Scene edit node screne.
+ */
+function editvr_experience_form_node_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'node_scene_edit_form') {
+    $node = $form_state->getFormObject()->getEntity();
+    $slug = !empty($node->field_slug->value) ? $node->field_slug->value : FALSE;
+    if (!$slug) {
+      return;
+    }
+
+    // Get all experience nodes that have this scene attached the entity
+    //reference field.
+    $query = \Drupal::entityQuery('node');
+    $query->condition('field_scenes.entity:node.nid', $node->id());
+
+    $parent_nids = array_values($query->execute());
+
+    if (count($parent_nids) < 1) {
+      return;
+    }
+
+    $node_storage = \Drupal::entityTypeManager()->getStorage('node');
+    $parent_nodes = $node_storage->loadMultiple($parent_nids);
+
+    // Add a placement link for each experience this scene is attached to.
+    $form['field_components']['#suffix'] = '';
+    foreach ($parent_nodes as $experience_node) {
+      $experience_url = isset($experience_node->field_experience_url->uri) ? $experience_node->field_experience_url->uri : FALSE;
+      if ($experience_url) {
+        $form['field_components']['#suffix'] .= '<div>' . _editvr_experience_place_components_link($experience_url, $slug, 'Place Components for ' . $experience_node->getTitle()) . '</div>';
+      }
+    }
+  }
+}
+
+/**
+ * @param string $experience_url: The url of the experience.
+ * @param string $slug: The slug for the scene
+ */
+function _editvr_experience_place_components_link($experience_url, $slug, $link_title = 'Place Components') {
+  $url = Url::fromUri("{$experience_url}?placing=1&scene={$slug}");
+  $vr_link = Link::fromTextAndUrl(t($link_title), $url);
+  $vr_link = $vr_link->toRenderable();
+
+  // Open link new window.
+  // $vr_link['#attributes'] = array('target' => '_blank');
+
+  return render($vr_link);
+}
