@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\fourkitchens_experience;
+namespace Drupal\editvr_experience;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceModifierInterface;
